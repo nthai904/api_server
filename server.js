@@ -91,6 +91,7 @@ app.use('/api/provinces', createProxyMiddleware({
 
 // Route mặc định
 app.get('/', (req, res) => {
+
   res.send('Haravan API Proxy Server Running');
 });
 
