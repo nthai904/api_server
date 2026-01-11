@@ -1,101 +1,81 @@
-require('dotenv').config();
-const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const axios = require("axios");
 
 const app = express();
 
-// Middleware để parse JSON
+/**
+ * CORS cho Zalo Mini App
+ */
+app.use(
+  cors({
+    origin: "https://h5.zdn.vn",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(express.json());
 
-// Proxy cho Haravan API - Products
-app.use('/api/product', createProxyMiddleware({
-  target: 'https://apis.haravan.com',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/product/(\\d+)': '/com/products/$1.json', // Chi tiết sản phẩm
-    '^/api/product': '/com/products.json', // Danh sách sản phẩm
+/**
+ * Base config Haravan
+ */
+const haravan = axios.create({
+  baseURL: "https://apis.haravan.com",
+  headers: {
+    Authorization: `Bearer ${process.env.HARAVAN_TOKEN}`,
+    "Content-Type": "application/json",
   },
-  onProxyReq: (proxyReq, req, res) => {
-    // Thêm header xác thực
-    proxyReq.setHeader('Authorization', `Bearer ${process.env.API_TOKEN}`);
-    proxyReq.setHeader('Content-Type', 'application/json');
-  }
-}));
-
-// Proxy cho Haravan API - Blogs
-app.use('/api/blog', createProxyMiddleware({
-  target: 'https://apis.haravan.com',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/blog/(\\d+)/count': '/web/blogs/$1/articles/count.json', // Số lượng bài viết
-    '^/api/blog/(\\d+)': '/web/blogs/$1/articles.json', // Bài viết theo blog ID
-    '^/api/blog': '/web/blogs.json', // Danh sách blog
-  },
-  onProxyReq: (proxyReq, req, res) => {
-    // Thêm header xác thực
-    proxyReq.setHeader('Authorization', `Bearer ${process.env.API_TOKEN}`);
-    proxyReq.setHeader('Content-Type', 'application/json');
-  }
-}));
-
-// Proxy cho Haravan API - Orders
-app.use('/api/order', createProxyMiddleware({
-  target: 'https://apis.haravan.com',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/order': '/com/orders.json', // Danh sách đơn hàng
-  },
-  onProxyReq: (proxyReq, req, res) => {
-    // Thêm header xác thực
-    proxyReq.setHeader('Authorization', `Bearer ${process.env.API_TOKEN}`);
-    proxyReq.setHeader('Content-Type', 'application/json');
-  }
-}));
-
-// Proxy cho Haravan API - Collections
-app.use('/api/collection', createProxyMiddleware({
-  target: 'https://apis.haravan.com',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/collection': '/com/custom_collections.json', // Danh sách bộ sưu tập
-  },
-  onProxyReq: (proxyReq, req, res) => {
-    // Thêm header xác thực
-    proxyReq.setHeader('Authorization', `Bearer ${process.env.API_TOKEN}`);
-    proxyReq.setHeader('Content-Type', 'application/json');
-  }
-}));
-
-// Proxy cho Haravan API - Collects
-app.use('/api/collect', createProxyMiddleware({
-  target: 'https://apis.haravan.com',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/collect': '/com/collects.json', // Danh sách collect
-  },
-  onProxyReq: (proxyReq, req, res) => {
-    // Thêm header xác thực
-    proxyReq.setHeader('Authorization', `Bearer ${process.env.API_TOKEN}`);
-    proxyReq.setHeader('Content-Type', 'application/json');
-  }
-}));
-
-// Proxy cho provinces API
-app.use('/api/provinces', createProxyMiddleware({
-  target: 'https://provinces.open-api.vn',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/provinces': '/api/v1', // Chuyển đổi đường dẫn
-  }
-}));
-
-// Route mặc định
-app.get('/', (req, res) => {
-
-  res.send('Haravan API Proxy Server Running');
 });
 
-const PORT = process.env.PORT || 3001;
+/**
+ * Example: Get products
+ * Zalo gọi: /api/products
+ */
+app.get("/api/products", async (req, res) => {
+  try {
+    const response = await haravan.get("/com/products.json", {
+      params: {
+        limit: 20,
+      },
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({
+      message: "Haravan API error",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+/**
+ * Example: Get blog by ID
+ * Zalo gọi: /api/blog/:id
+ */
+app.get("/api/blog/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const response = await haravan.get(`/com/blogs/${id}.json`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({
+      message: "Get blog failed",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+/**
+ * Health check
+ */
+app.get("/", (req, res) => {
+  res.send("Haravan Proxy for Zalo Mini App is running");
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
