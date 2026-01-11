@@ -75,9 +75,20 @@ app.get("/api/blog/:id/count", async (req, res) => {
   }
 });
 
+// /api/blog/:blog_id/article/:article_id  -> article details
+app.get("/api/blog/:blog_id/article/:article_id", async (req, res) => {
+  try {
+    const { blog_id, article_id } = req.params;
+    const result = await haravan.get(`/web/blogs/${blog_id}/articles/${article_id}.json`);
+    res.json(result.data);
+  } catch (e) {
+    res.status(500).json(e.response?.data || e.message);
+  }
+});
+
 /* ================= COLLECTION ================= */
 
-app.get("/api/collection", async (req, res) => {
+app.get("/api/collection", async (req, res) => {  
   try {
     const result = await haravan.get("/com/custom_collections.json");
     res.json(result.data);
