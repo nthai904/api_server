@@ -31,7 +31,7 @@ const haravan = axios.create({
 
 /**
  * Example: Get products
- * Zalo gọi: /api/products
+ * Zalo gọi: /api/products và /api/products/:id
  */
 app.get("/api/product/:id?", async (req, res) => {
   try {
@@ -85,6 +85,47 @@ app.get("/api/collection", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Collection API error",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+app.get("/api/collect", async (req, res) => {
+  try {
+    const response = await haravan.get("/com/collects.json");
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({
+      message: "Collect API error",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+// Proxy to provinces API (matches Vite rewrite to /api/v1)
+app.use("/api/provinces", async (req, res) => {
+  try {
+    const provincesBase = process.env.PROVICES_API_URL;
+    if (!provincesBase) {
+      return res.status(500).json({ message: "PROVICES_API_URL not set" });
+    }
+
+    // Preserve path and query. Replace /api/provinces -> /api/v1
+    const proxiedPath = req.originalUrl.replace(/^\/api\/provinces/, "/api/v1");
+
+    const response = await axios({
+      method: req.method,
+      baseURL: provincesBase,
+      url: proxiedPath,
+      params: req.query,
+      data: req.body,
+      headers: { "Content-Type": "application/json" },
+    });
+
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({
+      message: "Provinces API error",
       error: error.response?.data || error.message,
     });
   }
