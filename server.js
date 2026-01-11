@@ -113,7 +113,9 @@ app.get("/api/collect", async (req, res) => {
 app.post("/api/order", async (req, res) => {
   try {
     // Haravan API expects the order data wrapped in an "order" object
-    const orderData = { order: req.body };
+    // If client already sends { order: {...} }, use it directly
+    // Otherwise, wrap req.body in { order: req.body }
+    const orderData = req.body.order ? req.body : { order: req.body };
     const result = await haravan.post("/com/orders.json", orderData);
     res.json(result.data);
   } catch (e) {
