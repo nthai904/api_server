@@ -110,22 +110,29 @@ app.get("/api/collect", async (req, res) => {
 
 /* ================= ORDER ================= */
 
-app.post("/api/order", async (req, res) => {
+app.get("/api/order", async (req, res) => {
   try {
-    // Haravan API expects the order data wrapped in an "order" object
-    // If client already sends { order: {...} }, use it directly
-    // Otherwise, wrap req.body in { order: req.body }
-    const orderData = req.body.order ? req.body : { order: req.body };
-    const result = await haravan.post("/com/orders.json", orderData);
+    const params = req.query || {};
+    const result = await haravan.get("/com/orders.json", { params });
     res.json(result.data);
   } catch (e) {
-    // Return the actual status code from the API response, or 500 if unavailable
     const statusCode = e.response?.status || 500;
     res.status(statusCode).json(e.response?.data || { error: e.message });
   }
 });
 
-/* ================= HEALTH ================= */
+
+app.post("/api/order", async (req, res) => {
+  try {
+    const orderData = req.body.order ? req.body : { order: req.body };
+    const result = await haravan.post("/com/orders.json", orderData);
+    res.json(result.data);
+  } catch (e) {
+    const statusCode = e.response?.status || 500;
+    res.status(statusCode).json(e.response?.data || { error: e.message });
+  }
+});
+
 
 app.get("/", (req,res)=>{
   res.send("Haravan Proxy for Zalo Mini App running...");
