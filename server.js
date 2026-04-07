@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
+const CryptoJS = require("crypto-js");
 
 const app = express();
 
@@ -138,4 +139,37 @@ app.get("/", (req,res)=>{
   res.send("Haravan Proxy for Zalo Mini App running...");
 });
 
+app.post("/api/webhook", (req, res) => {
+  try {
+    const { data, mac } = req.body;
+
+    console.log("🔥 Zalo gửi về:", req.body);
+
+    if (!data || !mac) {
+      return res.json({ returnCode: 0 });
+    }
+
+    // verify MAC
+    const raw = `appId=${data.appId}&orderId=${data.orderId}&method=${data.method}`;
+
+    const verifyMac = CryptoJS.HmacSHA256(
+      raw,
+      process.env.ZALO_CHECKOUT_SECRET_KEY
+    ).toString();
+
+    if (verifyMac === mac) {
+      console.log("✅ Thanh toán hợp lệ:", data.orderId);
+
+      // 👉 TODO: update trạng thái đơn hàng
+
+      return res.json({ returnCode: 1 });
+    }
+
+    console.log("❌ Sai MAC");
+    return res.json({ returnCode: 0 });
+  } catch (err) {
+    console.error(err);
+    return res.json({ returnCode: 0 });
+  }
+});
 app.listen(3000, ()=> console.log("🚀 Proxy running at http://localhost:3000"));
