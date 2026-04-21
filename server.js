@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const CryptoJS = require("crypto-js");
+ import { createHmac } from "crypto";
 
 const app = express();
 
@@ -134,21 +135,35 @@ app.post("/api/order", async (req, res) => {
   }
 });
 
+
 app.post("/api/create-mac", (req, res) => {
   try {
-    const { amount, desc, item, extradata } = req.body;
-    const key = process.env.ZALO_CHECKOUT_SECRET_KEY;
+    const { amount, desc, item, extradata, method } = req.body;
 
-    const rawData = [
-      `amount=${amount}`,
-      `desc=${desc}`,
-      `item=${JSON.stringify(item ?? [])}`,
-      `extradata=${extradata ?? ""}`,
-    ].join("&");
+    const params = { amount, desc, item, extradata, method };
 
-    console.log("rawData để debug:", rawData);
+    const dataMac = Object.keys(params)
+      .sort()
+      .map((key) =>
+        `${key}=${
+          typeof params[key] === "object"
+            ? JSON.stringify(params[key])
+            : params[key]
+        }`
+      )
+      .join("&");
 
-    const mac = CryptoJS.HmacSHA256(rawData, key).toString();
+    const zcs = process.env.ZALO_CHECKOUT_SECRET_KEY;
+
+    if (!zcs) {
+      return res.status(500).json({
+        error: "Missing ZALO_CHECKOUT_SECRET_KEY in .env",
+      });
+    }
+    const mac = createHmac("sha256", zcs)
+      .update(dataMac)
+      .digest("hex");
+
     res.json({ mac });
   } catch (err) {
     res.status(500).json({ error: err.message });
