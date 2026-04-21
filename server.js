@@ -136,19 +136,19 @@ app.post("/api/order", async (req, res) => {
 
 app.post("/api/create-mac", (req, res) => {
   try {
-    const { amount, desc, item, extradata, method } = req.body;
-
+    const { amount, desc, item, extradata } = req.body;
     const key = process.env.ZALO_CHECKOUT_SECRET_KEY;
 
-    const rawData =
-      `amount=${amount}` +
-      `&desc=${desc}` +
-      `&extradata=${extradata || ""}` +
-      `&item=${JSON.stringify(item || [])}` +
-      `&method=${JSON.stringify(method || {})}`;
+    const rawData = [
+      `amount=${amount}`,
+      `desc=${desc}`,
+      `item=${JSON.stringify(item ?? [])}`,
+      `extradata=${extradata ?? ""}`,
+    ].join("&");
+
+    console.log("rawData để debug:", rawData);
 
     const mac = CryptoJS.HmacSHA256(rawData, key).toString();
-
     res.json({ mac });
   } catch (err) {
     res.status(500).json({ error: err.message });
