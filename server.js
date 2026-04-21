@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const CryptoJS = require("crypto-js");
- import { createHmac } from "crypto";
+const { createHmac } = require("crypto");
 
 const app = express();
 
