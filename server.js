@@ -134,43 +134,22 @@ app.post("/api/order", async (req, res) => {
   }
 });
 
-app.post("/api/create-mac", async (req, res) => {
+app.post("/api/create-mac", (req, res) => {
   try {
-    const { data } = req.body;
+    const { amount, desc, item, extradata, method } = req.body;
 
-    const app_id = process.env.APP_ID;
-    const key1 = process.env.ZALO_CHECKOUT_SECRET_KEY;
+    const key = process.env.ZALO_CHECKOUT_SECRET_KEY;
 
-    const app_trans_id = String(data.app_trans_id);
-    const app_user = "user_" + app_trans_id; 
-    const amount = Number(data.amount);
+    const rawData =
+      `amount=${amount}` +
+      `&desc=${desc}` +
+      `&extradata=${extradata || ""}` +
+      `&item=${JSON.stringify(item || [])}` +
+      `&method=${JSON.stringify(method || {})}`;
 
-    const app_time = Date.now();
-    const embed_data = "{}";
-    const item = "[]";
+    const mac = CryptoJS.HmacSHA256(rawData, key).toString();
 
-    const rawData = [
-      app_id,
-      app_trans_id,
-      app_user,
-      amount,
-      app_time,
-      embed_data,
-      item,
-    ].join("|");
-
-    const mac = CryptoJS.HmacSHA256(rawData, key1).toString();
-
-    res.json({
-      app_id,
-      app_trans_id,
-      app_user,
-      amount,
-      app_time,
-      embed_data,
-      item,
-      mac,
-    });
+    res.json({ mac });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
