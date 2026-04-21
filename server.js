@@ -138,20 +138,17 @@ app.post("/api/create-mac", async (req, res) => {
   try {
     const { data } = req.body;
 
-    if (!data) {
-      return res.status(400).json({ error: "Missing data" });
-    }
-
-    const app_id = process.env.ZALO_APP_ID;
+    const app_id = process.env.APP_ID;
     const key1 = process.env.ZALO_CHECKOUT_SECRET_KEY;
 
-    const app_trans_id = data.app_trans_id;
-    const app_user = data.app_user || "user123";
-    const amount = data.amount;
+    const app_trans_id = String(data.app_trans_id);
+    const app_user = "user_" + app_trans_id; 
+    const amount = Number(data.amount);
 
     const app_time = Date.now();
-    const embed_data = JSON.stringify({});
-    const item = JSON.stringify([]);
+    const embed_data = "{}";
+    const item = "[]";
+
     const rawData = [
       app_id,
       app_trans_id,
@@ -165,7 +162,6 @@ app.post("/api/create-mac", async (req, res) => {
     const mac = CryptoJS.HmacSHA256(rawData, key1).toString();
 
     res.json({
-      mac,
       app_id,
       app_trans_id,
       app_user,
@@ -173,9 +169,10 @@ app.post("/api/create-mac", async (req, res) => {
       app_time,
       embed_data,
       item,
+      mac,
     });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
