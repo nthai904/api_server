@@ -139,9 +139,9 @@ app.post("/api/order", async (req, res) => {
 app.post("/api/create-mac", async (req, res) => {
   try {
     const { amount, desc, item, extradata, method } = req.body;
-
+    console.log("RAW BODY:", req.body);
     const params = { amount, desc, item, extradata, method };
-
+    console.log("params:", params);
     const dataMac = Object.keys(params)
       .sort()
       .map((key) => {
