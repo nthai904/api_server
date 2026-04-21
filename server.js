@@ -134,42 +134,53 @@ app.post("/api/order", async (req, res) => {
   }
 });
 
+app.post("/api/create-mac", async (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!data) {
+      return res.status(400).json({ error: "Missing data" });
+    }
+
+    const app_id = process.env.ZALO_APP_ID;
+    const key1 = process.env.ZALO_CHECKOUT_SECRET_KEY;
+
+    const app_trans_id = data.app_trans_id;
+    const app_user = data.app_user || "user123";
+    const amount = data.amount;
+
+    const app_time = Date.now();
+    const embed_data = JSON.stringify({});
+    const item = JSON.stringify([]);
+    const rawData = [
+      app_id,
+      app_trans_id,
+      app_user,
+      amount,
+      app_time,
+      embed_data,
+      item,
+    ].join("|");
+
+    const mac = CryptoJS.HmacSHA256(rawData, key1).toString();
+
+    res.json({
+      mac,
+      app_id,
+      app_trans_id,
+      app_user,
+      amount,
+      app_time,
+      embed_data,
+      item,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 app.get("/", (req,res)=>{
   res.send("Haravan Proxy for Zalo Mini App running...");
 });
 
-app.post("/api/webhook", (req, res) => {
-  try {
-    const { data, mac } = req.body;
-
-    console.log("🔥 Zalo gửi về:", req.body);
-
-    if (!data || !mac) {
-      return res.json({ returnCode: 0 });
-    }
-
-    // verify MAC
-    const raw = `appId=${data.appId}&orderId=${data.orderId}&method=${data.method}`;
-
-    const verifyMac = CryptoJS.HmacSHA256(
-      raw,
-      process.env.ZALO_CHECKOUT_SECRET_KEY
-    ).toString();
-
-    if (verifyMac === mac) {
-      console.log("✅ Thanh toán hợp lệ:", data.orderId);
-
-      // 👉 TODO: update trạng thái đơn hàng
-
-      return res.json({ returnCode: 1 });
-    }
-
-    console.log("❌ Sai MAC");
-    return res.json({ returnCode: 0 });
-  } catch (err) {
-    console.error(err);
-    return res.json({ returnCode: 0 });
-  }
-});
 app.listen(3000, ()=> console.log("🚀 Proxy running at http://localhost:3000"));
