@@ -29,7 +29,26 @@ const haravan = axios.create({
 app.get("/api/product", async (req, res) => {
   try {
     const result = await haravan.get("/com/products.json");
-    res.json(result.data);
+
+    const hiddenIds = [
+      1052052810,
+      1052052427,
+      1037244867,
+      1057622121,
+      1057621699,
+      1054494326,
+      1054494098
+    ];
+
+    const filteredProducts = result.data.products.filter(
+      (product) => !hiddenIds.includes(product.id)
+    );
+
+    res.json({
+      ...result.data,
+      products: filteredProducts
+    });
+
   } catch (e) {
     res.status(500).json(e.response?.data || e.message);
   }
