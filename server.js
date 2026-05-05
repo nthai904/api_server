@@ -37,7 +37,10 @@ app.get("/api/product", async (req, res) => {
       1057622121,
       1057621699,
       1054494326,
-      1054494098
+      1054494098,
+      1070170066,
+      1068849162,
+      1068849024,
     ];
 
     const filteredProducts = result.data.products.filter(
